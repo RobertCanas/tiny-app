@@ -14,7 +14,8 @@ app.get("/", (require, response) => {
 });
 
 app.get("/urls", (require,response) => {
-  response.render()
+  let templateVars = { urls: urlDatabase };
+  response.render("urls_index", templateVars);
 });
 
 app.get("/urls.json", (require, response) => {
