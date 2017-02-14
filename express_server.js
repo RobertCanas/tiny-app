@@ -15,11 +15,19 @@ app.get("/", (require, response) => {
 
 app.get("/urls", (require,response) => {
   let templateVars = { urls: urlDatabase };
+  // console.log(templateVars);
   response.render("urls_index", templateVars);
 });
 
 app.get("/urls.json", (require, response) => {
   response.json(urlDatabase);
+});
+
+app.get("/urls/:id", (require, response) => {
+  let templateVars = { shortURL: require.params.id,
+                       url : urlDatabase[require.params.id] };
+  console.log(templateVars);
+  response.render("urls_show", templateVars);
 });
 
 app.get("/hello", (require, response) => {
