@@ -5,9 +5,10 @@
 </head>
 <body>
   <% include partials/_header %>
-  <ul>
-      <li><%= `${shortURL} : ${url}` %></li>
-  </ul>
-  <li><a href="#">Shorten Link!</a></li>
+
+      <h2><%= `ShortURL: ${shortURL}` %></h2>
+      <form action="/urls/<%= `${shortURL}` %>/update" method="POST">
+      <input id="longURL" type="text" name="longURL" placeholder="http://" style="width: 300px">
+      <input type="submit" value="Update">
 </body>
 </html>

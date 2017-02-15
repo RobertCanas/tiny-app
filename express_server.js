@@ -19,11 +19,15 @@ function generateRandomString(length) {
   return randomstring.generate(length);
 };
 
-app.get("/", (require, response) => {
+
+// Routes
+
+// Root route
+app.get("/", (request, response) => {
   response.end("Hello!");
 });
 
-app.get("/urls", (require, response) => {
+app.get("/urls", (request, response) => {
   let templateVars = {
     urls: urlDatabase
   };
@@ -31,35 +35,44 @@ app.get("/urls", (require, response) => {
   response.render("urls_index", templateVars);
 });
 
-// app.get("/urls/new", (require, response) => {
-//   response.render("urls_new");
+
+
+// app.get("/urls.json", (request, response) => {
+//   response.json(urlDatabase);
 // });
 
-app.post("/urls", (require, response) => {
+//Create new URLS
+app.get("/urls/:id", (request, response) => {
+  if (request.params.id in urlDatabase) {
+    response.render("urls_show", {
+      shortURL: request.params.id,
+      url: urlDatabase[request.params.id]
+    })
+  } else {
+    response.render("urls_new");
+  }
+});
+app.post("/urls", (request, response) => {
   let shortRandomKey = generateRandomString(6);
-  urlDatabase[shortRandomKey] = require['body']['longURL']; // debug statement to see POST parameters
+  urlDatabase[shortRandomKey] = request['body']['longURL']; // debug statement to see POST parameters
   response.redirect(`/urls/${shortRandomKey}`); // Respond with 'Ok' (we will replace this)
 });
-
-app.get("/u/:shortURL", (require, response) => {
+app.get("/u/:shortURL", (request, response) => {
   // let longURL = ...
-  let longURL = urlDatabase[require.params.shortURL];
+  let longURL = urlDatabase[request.params.shortURL];
   response.redirect(longURL);
 });
 
-app.get("/urls.json", (require, response) => {
-  response.json(urlDatabase);
+app.post("/urls/:id/delete", (request,response) => {
+  delete urlDatabase[request.params.id];
+  response.redirect("/urls");
 });
 
-app.get("/urls/:id", (require, response) => {
-      if (require.params.id in urlDatabase) {
-        response.render("urls_show", {
-          shortURL: require.params.id,
-          url: urlDatabase[require.params.id]
-        })} else {
-        response.render("urls_new");
-      }
-    });
+app.post("/urls/:id/update", (request,response) => {
+  urlDatabase[request.params.id] = request['body']['longURL'];
+  response.redirect("/urls");
+});
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
