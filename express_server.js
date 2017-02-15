@@ -10,13 +10,13 @@ app.use(bodyParser.urlencoded({
 
 app.set("view engine", "ejs");
 
-var urlDatabase = {
+let urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
 };
 
 function generateRandomString(length) {
-  console.log(randomstring.generate(length));
+  return randomstring.generate(length);
 };
 
 app.get("/", (require, response) => {
@@ -31,13 +31,20 @@ app.get("/urls", (require, response) => {
   response.render("urls_index", templateVars);
 });
 
-app.get("/urls/new", (require, response) => {
-  response.render("urls_new");
-});
+// app.get("/urls/new", (require, response) => {
+//   response.render("urls_new");
+// });
 
 app.post("/urls", (require, response) => {
-  console.log(req.body); // debug statement to see POST parameters
-  response.send("Ok"); // Respond with 'Ok' (we will replace this)
+  let shortRandomKey = generateRandomString(6);
+  urlDatabase[shortRandomKey] = require['body']['longURL']; // debug statement to see POST parameters
+  response.redirect(`/urls/${shortRandomKey}`); // Respond with 'Ok' (we will replace this)
+});
+
+app.get("/u/:shortURL", (require, response) => {
+  // let longURL = ...
+  let longURL = urlDatabase[require.params.shortURL];
+  response.redirect(longURL);
 });
 
 app.get("/urls.json", (require, response) => {
@@ -45,13 +52,14 @@ app.get("/urls.json", (require, response) => {
 });
 
 app.get("/urls/:id", (require, response) => {
-  let templateVars = {
-    shortURL: require.params.id,
-    url: urlDatabase[require.params.id]
-  };
-  response.render("urls_show", templateVars);
-});
-
+      if (require.params.id in urlDatabase) {
+        response.render("urls_show", {
+          shortURL: require.params.id,
+          url: urlDatabase[require.params.id]
+        })} else {
+        response.render("urls_new");
+      }
+    });
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
