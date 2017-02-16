@@ -27,6 +27,11 @@ const users = {
     id: "user2RandomID",
     email: "user2@example.com",
     password: "dishwasher-funk"
+  },
+  "user3RandomID": {
+    id: "user3RandomID",
+    email: "test@test.com",
+    password: "test123"
   }
 };
 
@@ -34,17 +39,32 @@ function generateRandomString(length) {
   return randomstring.generate(length);
 };
 
+function findUser(email) {
+  for (user in users) {
+    if (users[user]['email'] === email) {
+      return users[user]['id'];
+    }
+  }
+}
+function returnUserObject(email) {
+  for (user in users) {
+    if (users[user]['email'] === email) {
+      return users[user];
+    }
+  }
+}
 
 // Routes
 
 // Root route
 app.get("/", (request, response) => {
+  //let userEmail
   response.end("Hello!");
 });
 
 app.get("/urls", (request, response) => {
   let templateVars = {
-    username: request.cookies["username"],
+    user_ID: findUser(request.body.email),
     urls: urlDatabase
   };
   // console.log(templateVars);
@@ -61,20 +81,20 @@ app.get("/urls", (request, response) => {
 app.get("/urls/:id", (request, response) => {
   if (request.params.id in urlDatabase) {
     response.render("urls_show", {
-      username: request.cookies["username"],
+      user_ID: findUser(request.body.email),
       shortURL: request.params.id,
       url: urlDatabase[request.params.id]
     })
   } else {
     response.render("urls_new", {
-      username: request.cookies["username"],
+      user_ID: findUser(request.body.email),
     });
   }
 });
 app.post("/urls", (request, response) => {
   let shortRandomKey = generateRandomString(6);
-  urlDatabase[shortRandomKey] = request['body']['longURL']; // debug statement to see POST parameters
-  response.redirect(`/urls/${shortRandomKey}`); // Respond with 'Ok' (we will replace this)
+  urlDatabase[shortRandomKey] = request['body']['longURL'];
+  response.redirect(`/urls/${shortRandomKey}`);
 });
 app.get("/u/:shortURL", (request, response) => {
   // let longURL = ...
@@ -93,16 +113,32 @@ app.post("/urls/:id/update", (request, response) => {
 });
 
 app.post("/login", (request, response) => {
-  let user = request['body']['usernameInsert'];
-  response.cookie('username', user);
-  response.redirect("/");
+  let userEmail = request['body']['email'];
+  let userPassword = request['body']['password'];
+  for (let user_ID in users) {
+    let findUserID = findUser(userEmail);
+    let findUserObject = returnUserObject(userEmail);
+    if (userEmail === findUserObject['email'] && userPassword === findUserObject['password']) {
+      response.cookie('user_ID', findUserID);
+      response.redirect("/");
+      break;
+    } else {
+      response.status(400).send('One of your fields is incorrect.');
+      return;
+    }
+  }
 });
 
 app.post("/logout", (request, response) => {
-  response.clearCookie('username', {
+  response.clearCookie('user_ID', {
     path: '/'
   });
+  console.log(users);
   response.redirect("/");
+});
+
+app.get("/login", (request, response) => {
+  response.render("urls_login");
 });
 
 app.get("/register", (request, response) => {
@@ -114,8 +150,8 @@ app.post("/register", (request, response) => {
     response.status(400).send('Email or password needs to be entered.');
     return;
   } else {
-    for (let user in users) {
-      if (users[user]['email'] === request.body.email) {
+    for (let user_ID in users) {
+      if (users[user_ID]['email'] === request.body.email) {
         response.status(400).send('One of your fields is incorrect.')
         return;
       }
@@ -128,7 +164,7 @@ app.post("/register", (request, response) => {
     password: request.body.password
   }
   console.log(users);
-  response.cookie('user', users[randomIDgen]['id']);
+  response.cookie('user_ID', users[randomIDgen]['id']);
   response.redirect("/");
 });
 
