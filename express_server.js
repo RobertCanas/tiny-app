@@ -90,6 +90,14 @@ app.post("/logout", (request, response) => {
   response.redirect("/");
 })
 
+app.get("/user_register", (request,response) => {
+  let templateVars = {
+    username: request.cookies["username"],
+    urls: urlDatabase
+  };
+  response.render("urls_register", templateVars);
+
+});
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
