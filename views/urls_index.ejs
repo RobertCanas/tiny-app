@@ -6,11 +6,7 @@
 <body>
   <% include partials/_header %>
   <ul>
-
-    <% //Object.keys(urls).forEach((key) => { %>
-      <%= /*key + " : " + urls[key] */%>
-    <% //});%>
-
+<% if (user_ID) { %>
     <% for (var key in urls) { %>
       <li><%= key + " : " + urls[key] %></li>
       <li><a href="/urls/<%= key %>">Edit</a></li>
@@ -20,5 +16,8 @@
     <% }; %>
   </ul>
   <li><a href="/urls/new">Shorten Link!</a></li>
+<% } else { %>
+  <p> Please log in.</p>
+<% } %>
 </body>
 </html>

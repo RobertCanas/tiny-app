@@ -5,6 +5,8 @@ var randomstring = require("randomstring");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 
+//res.locals.user_ID = req.cookies['user_ID'];
+
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({
   extended: true
@@ -64,10 +66,9 @@ app.get("/", (request, response) => {
 
 app.get("/urls", (request, response) => {
   let templateVars = {
-    user_ID: findUser(request.body.email),
+    user_ID: (request.cookies.user_ID),
     urls: urlDatabase
   };
-  // console.log(templateVars);
   response.render("urls_index", templateVars);
 });
 
@@ -81,13 +82,13 @@ app.get("/urls", (request, response) => {
 app.get("/urls/:id", (request, response) => {
   if (request.params.id in urlDatabase) {
     response.render("urls_show", {
-      user_ID: findUser(request.body.email),
+      user_ID: (request.cookies.user_ID),
       shortURL: request.params.id,
       url: urlDatabase[request.params.id]
     })
   } else {
     response.render("urls_new", {
-      user_ID: findUser(request.body.email),
+      user_ID: (request.cookies.user_ID)
     });
   }
 });
@@ -133,7 +134,6 @@ app.post("/logout", (request, response) => {
   response.clearCookie('user_ID', {
     path: '/'
   });
-  console.log(users);
   response.redirect("/");
 });
 
