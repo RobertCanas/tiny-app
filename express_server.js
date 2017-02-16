@@ -12,9 +12,22 @@ app.use(bodyParser.urlencoded({
 
 app.set("view engine", "ejs");
 
-let urlDatabase = {
+const urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com"
+};
+
+const users = {
+  "userRandomID": {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur"
+  },
+  "user2RandomID": {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk"
+  }
 };
 
 function generateRandomString(length) {
@@ -83,20 +96,40 @@ app.post("/login", (request, response) => {
   let user = request['body']['usernameInsert'];
   response.cookie('username', user);
   response.redirect("/");
-})
+});
 
 app.post("/logout", (request, response) => {
-  response.clearCookie('username', { path: '/' });
+  response.clearCookie('username', {
+    path: '/'
+  });
   response.redirect("/");
-})
+});
 
-app.get("/user_register", (request,response) => {
-  let templateVars = {
-    username: request.cookies["username"],
-    urls: urlDatabase
-  };
-  response.render("urls_register", templateVars);
+app.get("/register", (request, response) => {
+  response.render("urls_register");
+});
 
+app.post("/register", (request, response) => {
+  if (request.body.email === "" || request.body.password === "") {
+    response.status(400).send('Email or password needs to be entered.');
+    return;
+  } else {
+    for (let user in users) {
+      if (users[user]['email'] === request.body.email) {
+        response.status(400).send('One of your fields is incorrect.')
+        return;
+      }
+    }
+  }
+  let randomIDgen = generateRandomString(6);
+  users[randomIDgen] = {
+    id: randomIDgen,
+    email: request.body.email,
+    password: request.body.password
+  }
+  console.log(users);
+  response.cookie('user', users[randomIDgen]['id']);
+  response.redirect("/");
 });
 
 app.listen(PORT, () => {
