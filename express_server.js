@@ -85,6 +85,12 @@ app.post("/login", (request, response) => {
   response.redirect("/");
 })
 
+app.post("/logout", (request, response) => {
+  response.clearCookie('username', { path: '/' });
+  response.redirect("/");
+})
+
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
