@@ -3,7 +3,9 @@ var app = express();
 var PORT = process.env.PORT || 8080; // default port 8080
 var randomstring = require("randomstring");
 const bodyParser = require("body-parser");
+const cookieParser = require("cookie-parser");
 
+app.use(cookieParser());
 app.use(bodyParser.urlencoded({
   extended: true
 }));
@@ -29,6 +31,7 @@ app.get("/", (request, response) => {
 
 app.get("/urls", (request, response) => {
   let templateVars = {
+    username: request.cookies["username"],
     urls: urlDatabase
   };
   // console.log(templateVars);
@@ -45,11 +48,14 @@ app.get("/urls", (request, response) => {
 app.get("/urls/:id", (request, response) => {
   if (request.params.id in urlDatabase) {
     response.render("urls_show", {
+      username: request.cookies["username"],
       shortURL: request.params.id,
       url: urlDatabase[request.params.id]
     })
   } else {
-    response.render("urls_new");
+    response.render("urls_new", {
+      username: request.cookies["username"],
+    });
   }
 });
 app.post("/urls", (request, response) => {
@@ -63,17 +69,17 @@ app.get("/u/:shortURL", (request, response) => {
   response.redirect(longURL);
 });
 
-app.post("/urls/:id/delete", (request,response) => {
+app.post("/urls/:id/delete", (request, response) => {
   delete urlDatabase[request.params.id];
   response.redirect("/urls");
 });
 
-app.post("/urls/:id/update", (request,response) => {
+app.post("/urls/:id/update", (request, response) => {
   urlDatabase[request.params.id] = request['body']['longURL'];
   response.redirect("/urls");
 });
 
-app.post("/login", (request,response) => {
+app.post("/login", (request, response) => {
   let user = request['body']['usernameInsert'];
   response.cookie('username', user);
   response.redirect("/");
