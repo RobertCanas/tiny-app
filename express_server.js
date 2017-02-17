@@ -4,6 +4,7 @@ var PORT = process.env.PORT || 8080; // default port 8080
 var randomstring = require("randomstring");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
+const bcrypt = require('bcrypt');
 
 //res.locals.user_ID = req.cookies['user_ID'];
 
@@ -31,17 +32,17 @@ const users = {
   "userRandomID": {
     id: "userRandomID",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur"
+    password: bcrypt.hashSync("purple-monkey-dinosaur", 10)
   },
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk"
+    password: bcrypt.hashSync("dishwasher-funk", 10)
   },
   "user3RandomID": {
     id: "user3RandomID",
     email: "test@test.com",
-    password: "test123"
+    password: bcrypt.hashSync("test123", 10)
   }
 };
 
@@ -145,10 +146,12 @@ app.post("/login", (request, response) => {
   for (let user_ID in users) {
     let findUserID = findUser(userEmail);
     let findUserObject = returnUserObject(userEmail);
-    if (userEmail === findUserObject['email'] && userPassword === findUserObject['password']) {
-      response.cookie('user_ID', findUserID);
-      response.redirect("/");
+    if (userEmail === findUserObject['email']) {
+      if (bcrypt.compareSync(userPassword, users[user].password)) {
+        response.cookie('user_ID', findUserID);
+        response.redirect("/");
       break;
+      }
     } else {
       response.status(400).send('One of your fields is incorrect.');
       return;
@@ -187,7 +190,7 @@ app.post("/register", (request, response) => {
   users[randomIDgen] = {
     id: randomIDgen,
     email: request.body.email,
-    password: request.body.password
+    password: bcrypt.hashSync(request.body.password, 10)
   }
   console.log(users);
   response.cookie('user_ID', users[randomIDgen]['id']);
