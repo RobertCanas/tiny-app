@@ -3,12 +3,16 @@ var app = express();
 var PORT = process.env.PORT || 8080; // default port 8080
 var randomstring = require("randomstring");
 const bodyParser = require("body-parser");
-const cookieParser = require("cookie-parser");
 const bcrypt = require('bcrypt');
+const cookieSession = require('cookie-session');
 
 //res.locals.user_ID = req.cookies['user_ID'];
 
-app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: [process.env.SESSION_SECRET || 'development'],
+}))
+
 app.use(bodyParser.urlencoded({
   extended: true
 }));
@@ -57,6 +61,7 @@ function findUser(email) {
     }
   }
 }
+
 function returnUserObject(email) {
   for (user in users) {
     if (users[user]['email'] === email) {
@@ -88,8 +93,8 @@ app.get("/", (request, response) => {
 
 app.get("/urls", (request, response) => {
   let templateVars = {
-    user_ID: (request.cookies.user_ID),
-    urls: urlsForUser(request.cookies.user_ID)
+    user_ID: (request.session.user_ID),
+    urls: urlsForUser(request.session.user_ID)
   };
   response.render("urls_index", templateVars);
 });
@@ -104,13 +109,13 @@ app.get("/urls", (request, response) => {
 app.get("/urls/:id", (request, response) => {
   if (request.params.id in urlDatabase) {
     response.render("urls_show", {
-      user_ID: (request.cookies.user_ID),
+      user_ID: (request.session.user_ID),
       shortURL: request.params.id,
       url: urlDatabase[request.params.id]
     })
   } else {
     response.render("urls_new", {
-      user_ID: (request.cookies.user_ID)
+      user_ID: (request.session.user_ID)
     });
   }
 });
@@ -119,7 +124,7 @@ app.post("/urls", (request, response) => {
   urlDatabase[shortRandomKey] = {
     id: shortRandomKey,
     longURL: request['body']['longURL'],
-    userID: request.cookies.user_ID
+    userID: request.session.user_ID
   }
   response.redirect(`/urls/${shortRandomKey}`);
 });
@@ -145,24 +150,22 @@ app.post("/login", (request, response) => {
   let userPassword = request['body']['password'];
   for (let user_ID in users) {
     let findUserID = findUser(userEmail);
-    let findUserObject = returnUserObject(userEmail);
-    if (userEmail === findUserObject['email']) {
+    if (userEmail === users[user_ID]['email']) {
       if (bcrypt.compareSync(userPassword, users[user].password)) {
-        response.cookie('user_ID', findUserID);
+        request.session.user_ID = findUserID;
         response.redirect("/");
-      break;
+        return;
+      } else {
+        response.status(400).send('One of your fields is incorrect.');
+        return;
       }
-    } else {
-      response.status(400).send('One of your fields is incorrect.');
-      return;
     }
   }
+  response.status(400).send('One of your fields is incorrect.');
 });
 
 app.post("/logout", (request, response) => {
-  response.clearCookie('user_ID', {
-    path: '/'
-  });
+  request.session = null;
   response.redirect("/");
 });
 
@@ -193,7 +196,7 @@ app.post("/register", (request, response) => {
     password: bcrypt.hashSync(request.body.password, 10)
   }
   console.log(users);
-  response.cookie('user_ID', users[randomIDgen]['id']);
+  request.session.user_ID = randomIDgen;
   response.redirect("/");
 });
 
