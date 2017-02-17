@@ -15,8 +15,16 @@ app.use(bodyParser.urlencoded({
 app.set("view engine", "ejs");
 
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": {
+    id: "b2xVn2",
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "userRandomID"
+  },
+  "9sm5xK": {
+    id: "9sm5xK",
+    longURL: "http://www.google.com",
+    userID: "user3RandomID"
+  }
 };
 
 const users = {
@@ -56,6 +64,19 @@ function returnUserObject(email) {
   }
 }
 
+function urlsForUser(id) {
+  let userURLs = {};
+  for (let url in urlDatabase) {
+    if (id === urlDatabase[url].userID) {
+      userURLs[urlDatabase[url].id] = {
+        id: urlDatabase[url].id,
+        longURL: urlDatabase[url].longURL
+      }
+    }
+  }
+  return userURLs;
+}
+
 // Routes
 
 // Root route
@@ -67,7 +88,7 @@ app.get("/", (request, response) => {
 app.get("/urls", (request, response) => {
   let templateVars = {
     user_ID: (request.cookies.user_ID),
-    urls: urlDatabase
+    urls: urlsForUser(request.cookies.user_ID)
   };
   response.render("urls_index", templateVars);
 });
@@ -94,12 +115,17 @@ app.get("/urls/:id", (request, response) => {
 });
 app.post("/urls", (request, response) => {
   let shortRandomKey = generateRandomString(6);
-  urlDatabase[shortRandomKey] = request['body']['longURL'];
+  urlDatabase[shortRandomKey] = {
+    id: shortRandomKey,
+    longURL: request['body']['longURL'],
+    userID: request.cookies.user_ID
+  }
   response.redirect(`/urls/${shortRandomKey}`);
 });
+
 app.get("/u/:shortURL", (request, response) => {
   // let longURL = ...
-  let longURL = urlDatabase[request.params.shortURL];
+  let longURL = urlDatabase[request.params.shortURL].longURL;
   response.redirect(longURL);
 });
 
@@ -109,7 +135,7 @@ app.post("/urls/:id/delete", (request, response) => {
 });
 
 app.post("/urls/:id/update", (request, response) => {
-  urlDatabase[request.params.id] = request['body']['longURL'];
+  urlDatabase[request.params.id].longURL = request['body']['longURL'];
   response.redirect("/urls");
 });
 

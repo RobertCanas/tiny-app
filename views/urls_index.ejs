@@ -8,7 +8,7 @@
   <ul>
 <% if (user_ID) { %>
     <% for (var key in urls) { %>
-      <li><%= key + " : " + urls[key] %></li>
+      <li><%= key + " : " + urls[key].longURL %></li>
       <li><a href="/urls/<%= key %>">Edit</a></li>
       <form method="POST" action="/urls/<%= key %>/delete">
         <input type="submit" value="Delete">
