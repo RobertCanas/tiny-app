@@ -87,62 +87,131 @@ function urlsForUser(id) {
 
 // Root route
 app.get("/", (request, response) => {
-  //let userEmail
-  response.end("Hello!");
+  response.redirect("/urls");
 });
 
-app.get("/urls", (request, response) => {
-  let templateVars = {
-    user_ID: (request.session.user_ID),
-    urls: urlsForUser(request.session.user_ID)
-  };
-  response.render("urls_index", templateVars);
-});
-
-
-
-// app.get("/urls.json", (request, response) => {
-//   response.json(urlDatabase);
-// });
-
-//Create new URLS
-app.get("/urls/:id", (request, response) => {
-  if (request.params.id in urlDatabase) {
-    response.render("urls_show", {
-      user_ID: (request.session.user_ID),
-      shortURL: request.params.id,
-      url: urlDatabase[request.params.id]
-    })
+app.get('/urls', (request, response) => {
+  if (request.session.user_ID === undefined) {
+    response.status(401).send('Please Login to continue or Register. <p><a href="/login">Login</a></p> <p><a href="/register">Register</a></p>');
   } else {
-    response.render("urls_new", {
-      user_ID: (request.session.user_ID)
-    });
+    for (let user in users) {
+      if (request.session.user_ID === users[user]['id']) {
+        response.status(200);
+        response.render('urls_index', {
+          urls: urlsForUser(request.session.user_ID),
+          user_ID: request.session.user_ID,
+          user_email: users[user]['email']
+        });
+        return;
+      }
+    }
   }
-});
-app.post("/urls", (request, response) => {
-  let shortRandomKey = generateRandomString(6);
-  urlDatabase[shortRandomKey] = {
-    id: shortRandomKey,
-    longURL: request['body']['longURL'],
-    userID: request.session.user_ID
-  }
-  response.redirect(`/urls/${shortRandomKey}`);
 });
 
-app.get("/u/:shortURL", (request, response) => {
-  // let longURL = ...
-  let longURL = urlDatabase[request.params.shortURL].longURL;
-  response.redirect(longURL);
+
+app.get('/urls/new', (request, response) => {
+  if (request.session.user_ID === undefined) {
+    response.status(401).send('Please Login to continue or Register. <p><a href="/login">Login</a></p> <p><a href="/register">Register</a></p>');
+  } else {
+    for (let user in users) {
+      if (request.session.user_ID === users[user]['id']) {
+        response.status(200).render('urls_new', {
+          user_ID: request.session.user_ID,
+          user_email: users[user]['email']
+        });
+        return;
+      }
+    }
+  }
 });
+
+// TODO if user is not logged in:
+// returns a 401 response, HTML with a relevant error message and a link to /login
+// TODO if logged in user does not match the user that owns this url:
+// returns a 403 response, HTML with a relevant error message
+app.get("/urls/:id", (request, response) => {
+  if (urlDatabase[request.params.id] === undefined) {
+    response.status(404).send('404 Error. <p><a href="/urls">Back to TinyApp</a></p>');
+  } else if (request.session.user_ID === undefined) {
+    response.status(401).send('401 Error. <p><a href="/login">Login</a></p>');
+  } else if (request.session.user_ID !== urlDatabase[request.params.id].userID) {
+    response.status(403).send('403 Error. <p><a href="/urls">Back to TinyApp</a></p>');
+  } else(request.session.user_ID === urlDatabase[request.params.id].userID)
+  response.status(200).render("urls_show", {
+    user_ID: request.session.user_ID,
+    shortURL: urlDatabase[request.params.id].id,
+    longURL: urlDatabase[request.params.id].longURL,
+    urlUserID: urlDatabase[request.params.id].userID,
+    user_email: users[`${request.session.user_ID}`].email
+  });
+
+});
+
+app.get("/u/:id", (request, response) => {
+  if (request.params.id in urlDatabase) {
+    let longURL = urlDatabase[request.params.id].longURL;
+    response.status(200).redirect(longURL);
+  } else {
+    response.status(404).send('Page does not exist. <p><a href="/urls">Back to TinyApp</a></p>');
+  }
+});
+
+app.post("/urls", (request, response) => {
+  if (request.session['user_ID']) {
+    let shortRandomKey = generateRandomString(6);
+    urlDatabase[shortRandomKey] = {
+      id: shortRandomKey,
+      longURL: request['body']['longURL'],
+      userID: request.session.user_ID
+    }
+    console.log(urlDatabase[shortRandomKey]);
+    response.redirect(`/urls/${shortRandomKey}`);
+  } else {
+    response.status(401).send('401 Error. <p><a href="/urls">Back to TinyApp</a></p>');
+  }
+});
+
+
 
 app.post("/urls/:id/delete", (request, response) => {
-  delete urlDatabase[request.params.id];
-  response.redirect("/urls");
+  if (urlDatabase[request.params.id] === undefined) {
+    response.status(404).send('404 Error. <p><a href="/urls">Back to TinyApp</a></p>')
+  } else if (!request.session) {
+    response.status(401).send('404 Error. <p><a href="/urls">Back to TinyApp</a></p>');
+  } else if (request.session.user_ID !== urlDatabase[request.params.id].userID) {
+    response.status(403).send('404 Error. <p><a href="/urls">Back to TinyApp</a></p>');
+  } else {
+    delete urlDatabase[request.params.id];
+    response.redirect("/urls");
+  }
 });
 
 app.post("/urls/:id/update", (request, response) => {
-  urlDatabase[request.params.id].longURL = request['body']['longURL'];
-  response.redirect("/urls");
+  if (urlDatabase[request.params.id] === undefined) {
+    response.status(404).send('404 Error. <p><a href="/urls">Back to TinyApp</a></p>')
+  } else if (!request.session) {
+    response.status(401).send('404 Error. <p><a href="/urls">Back to TinyApp</a></p>');
+  } else if (request.session.user_ID !== urlDatabase[request.params.id].userID) {
+    response.status(403).send('404 Error. <p><a href="/urls">Back to TinyApp</a></p>');
+  } else {
+    urlDatabase[request.params.id].longURL = request['body']['longURL'];
+    response.redirect("/urls");
+  }
+});
+
+
+
+app.post("/logout", (request, response) => {
+  request.session = null;
+  response.redirect("/");
+});
+
+app.get("/login", (request, response) => {
+  if (request.session.user_ID) {
+    response.redirect('/');
+  } else {
+    response.render("urls_login");
+  }
 });
 
 app.post("/login", (request, response) => {
@@ -156,35 +225,30 @@ app.post("/login", (request, response) => {
         response.redirect("/");
         return;
       } else {
-        response.status(400).send('One of your fields is incorrect.');
+        response.status(401).send('One of your fields is incorrect. <p><a href="/login">Back to Login</a></p>');
         return;
       }
     }
   }
-  response.status(400).send('One of your fields is incorrect.');
-});
-
-app.post("/logout", (request, response) => {
-  request.session = null;
-  response.redirect("/");
-});
-
-app.get("/login", (request, response) => {
-  response.render("urls_login");
+  response.status(400).send('One of your fields is incorrect. <p><a href="/login">Back to Login</a></p>');
 });
 
 app.get("/register", (request, response) => {
-  response.render("urls_register");
+  if (request.session.user_ID) {
+    response.redirect('/');
+  } else {
+    response.status(200).render("urls_register");
+  }
 });
 
 app.post("/register", (request, response) => {
   if (request.body.email === "" || request.body.password === "") {
-    response.status(400).send('Email or password needs to be entered.');
+    response.status(400).send('Email or password needs to be entered. <p><a href="/register">Back to Register</a></p>');
     return;
   } else {
     for (let user_ID in users) {
       if (users[user_ID]['email'] === request.body.email) {
-        response.status(400).send('One of your fields is incorrect.')
+        response.status(400).send('One of your fields is incorrect. <p><a href="/register">Back to Register</a></p>')
         return;
       }
     }
